@@ -22,6 +22,7 @@ folders_dict = None
 writer = None
 
 def main(args: argparse.Namespace):
+    global writer
     writer = SummaryWriter()
 
     folders_dict = preprocessing(args)
@@ -29,13 +30,13 @@ def main(args: argparse.Namespace):
     # test.test_drawing(folders_dict)
     # test.test_network(folders_dict)
 
-    train(args)
+    train(args, folders_dict, writer)
 
 
 def preprocessing(args: argparse.Namespace):
+    global folders_dict
     # Defining a dictionary with all folders
-    folders_dict = dataset_dict(args)
-    folders_dict['labelme_train_folder']
+    dataset_dict(args)
 
     # Splitting dataset
     if not os.path.exists(folders_dict['output_dir']):
@@ -79,6 +80,7 @@ def preprocessing(args: argparse.Namespace):
 
 
 def dataset_dict(args: argparse.Namespace):
+    global folders_dict
     folders_dict = dict()
     folders_dict['dataset_dir'] = os.path.join(os.getcwd(), "Dataset")
     folders_dict['output_dir'] = os.path.join(folders_dict['dataset_dir'], args.output_dir)
@@ -97,8 +99,6 @@ def dataset_dict(args: argparse.Namespace):
 
     folders_dict['coco_train_ann'] = os.path.join(folders_dict['cocoanns_dir'], "train.json")
     folders_dict['coco_val_ann'] = os.path.join(folders_dict['cocoanns_dir'], "val.json")
-
-    return folders_dict
 
 
 def setup_fiftyone(dataset_dir):
@@ -120,6 +120,9 @@ def setup_fiftyone(dataset_dir):
 
 
 def train(args: argparse.Namespace):
+    global folders_dict
+    global writer
+
     if torch.cuda.is_available():
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
