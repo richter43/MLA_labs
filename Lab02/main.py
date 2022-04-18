@@ -1,7 +1,9 @@
 import argparse
 import os
+import logging
 from distutils.dir_util import copy_tree
 from typing import Dict
+
 
 import fiftyone as fo
 import labelme2coco
@@ -15,12 +17,16 @@ import network
 from torchvision.transforms.functional import convert_image_dtype
 from torch.utils.tensorboard import SummaryWriter
 
+logger = logging.Logger("MainLogger")
 
 def main(args: argparse.Namespace):
 
     writer = SummaryWriter()
 
+
+
     folders_dict = preprocessing(args)
+    logger.log(logging.INFO, "Successfully setup")
     # test_drawing(folders_dict)
     # test_network(folders_dict)
 
@@ -145,26 +151,23 @@ def train(args: argparse.Namespace, folders_dict: Dict[str, str], writer: Summar
 
     train_dataset = BSDDataset(folders_dict['train_dir'], folders_dict['coco_train_ann'])
     val_dataset = BSDDataset(folders_dict['val_dir'], folders_dict['coco_val_ann'])
-    train_dataloder = DataLoader(train_dataset, batch_size=1, pin_memory=torch.cuda.is_available())
-    val_dataloder = DataLoader(val_dataset, batch_size=1, pin_memory=torch.cuda.is_available())
+    train_dataloder = DataLoader(train_dataset, batch_size=1, collate_fn=utils.pass_through_collate if torch.cuda.is_available() else None)
+    val_dataloder = DataLoader(val_dataset, batch_size=1, collate_fn=utils.pass_through_collate if torch.cuda.is_available() else None)
 
-    model = network.maskrcnn_resnet101_fpn()
-
-    train_dataset = BSDDataset(folders_dict['train_dir'], folders_dict['coco_train_ann'])
+    model = network.maskrcnn_resnet101_fpn().to(device)
 
     model.train()
 
     for epoch in range(args.epochs):
         loss_mgr = utils.MaskRCNNLossManager()
         for image_tensor, target in train_dataloder:
-            # Collate adds another useless dimension, don't want to deal with this bs so this is the fastest solution possible
-            target['boxes'] = target['boxes'][0]
-            target['labels'] = target['labels'][0]
-            target['scores'] = target['scores'][0]
-            target['masks'] = target['masks'][0]
+
             image_tensor_float = convert_image_dtype(image_tensor)
             res = model(image_tensor_float, [target])
             loss_mgr.add(res, image_tensor.shape[0])
+
+        if epoch % 2 == 0:
+            logger.log(logging.INFO, "Epoch %d", epoch)
 
         class_loss_avg, box_loss_avg, mask_loss_avg, objns_loss_avg, rpn_box_reg_loss = loss_mgr.get_averages()
         writer.add_scalar('Loss/train/classifier', class_loss_avg, epoch)
@@ -172,7 +175,6 @@ def train(args: argparse.Namespace, folders_dict: Dict[str, str], writer: Summar
         writer.add_scalar('Loss/train/mask', mask_loss_avg, epoch)
         writer.add_scalar('Loss/train/objectness', objns_loss_avg, epoch)
         writer.add_scalar('Loss/train/rpn_box_reg', rpn_box_reg_loss, epoch)
-
     writer.close()
 
 if __name__ == "__main__":

@@ -156,7 +156,15 @@ def draw_target(image: torch.TensorType, target: Dict[str, torch.TensorType], sh
         plt.show()
 
 def pass_through_collate(batch):
-    return batch[0]
+    image, target = batch[0]
+
+    image = image.to("cuda")
+    target['boxes'] = target['boxes'].to("cuda")
+    target['labels'] = target['labels'].to("cuda")
+    target['scores'] = target['scores'].to("cuda")
+    target['masks'] = target['masks'].to("cuda")
+
+    return [image, target]
 
 class MaskRCNNLossManager(object):
     def __init__(self):
