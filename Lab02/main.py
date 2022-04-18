@@ -17,16 +17,12 @@ import network
 from torchvision.transforms.functional import convert_image_dtype
 from torch.utils.tensorboard import SummaryWriter
 
-logger = logging.Logger("MainLogger")
-
 def main(args: argparse.Namespace):
 
     writer = SummaryWriter()
 
-
-
     folders_dict = preprocessing(args)
-    logger.log(logging.INFO, "Successfully setup")
+    logging.info("Successfully setup")
     # test_drawing(folders_dict)
     # test_network(folders_dict)
 
@@ -161,13 +157,12 @@ def train(args: argparse.Namespace, folders_dict: Dict[str, str], writer: Summar
     for epoch in range(args.epochs):
         loss_mgr = utils.MaskRCNNLossManager()
         for image_tensor, target in train_dataloder:
-
             image_tensor_float = convert_image_dtype(image_tensor)
-            res = model(image_tensor_float, [target])
+            res = model([image_tensor_float], [target])
             loss_mgr.add(res, image_tensor.shape[0])
 
         if epoch % 2 == 0:
-            logger.log(logging.INFO, "Epoch %d", epoch)
+            logging.log(logging.INFO, "Epoch %d", epoch)
 
         class_loss_avg, box_loss_avg, mask_loss_avg, objns_loss_avg, rpn_box_reg_loss = loss_mgr.get_averages()
         writer.add_scalar('Loss/train/classifier', class_loss_avg, epoch)
