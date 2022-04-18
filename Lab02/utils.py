@@ -40,7 +40,7 @@ def argparser() -> argparse.Namespace:
                         default=2000)
     parser.add_argument('--output_dir', help='output_dir', type=str, default='coco_output')
     parser.add_argument('--fiftyone', help='Setup and show fiftyone', action='store_true')
-    parser.add_argument('--model_output_path', help='Model\'s weights output', default='./model/output.pth')
+    parser.add_argument('--model_output_path', help='Model\'s weights output', default='./output.pth')
     opt = parser.parse_args()
     return opt
 
