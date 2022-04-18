@@ -1,0 +1,4 @@
+fiftyone==0.15.0.1
+opencv-python-headless<4.3
+labelme2coco==0.2.1
+torchvision==0.12.0
