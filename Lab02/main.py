@@ -40,9 +40,9 @@ def preprocessing(args: argparse.Namespace):
     utils.makedirs(folders_dict['val_dir'])
 
     # Creating training and validation datasets for mrcnn
-    if not os.path.exists(folders_dict['train_dir']):
+    if len(os.listdir(folders_dict['train_dir'])) == 0:
         utils.create_dataset_mrcnn(folders_dict['labelme_train_folder'], folders_dict['train_dir'])
-    if not os.path.exists(folders_dict['val_dir']):
+    if len(os.listdir(folders_dict['val_dir'])) == 0:
         utils.create_dataset_mrcnn(folders_dict['labelme_val_folder'], folders_dict['val_dir'])
 
     # Copy contents from the entirety of the folders
