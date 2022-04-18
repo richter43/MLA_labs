@@ -30,7 +30,7 @@ def main(args: argparse.Namespace):
     # test.test_drawing(folders_dict)
     # test.test_network(folders_dict)
 
-    train(args, folders_dict, writer)
+    train(args)
 
 
 def preprocessing(args: argparse.Namespace):
@@ -135,17 +135,25 @@ def train(args: argparse.Namespace):
 
     model = network.maskrcnn_resnet101_fpn().to(device)
 
+    optim_fn = torch.optim.Adam(model.parameters(), lr=1e-3)
+
     model.train()
 
     for epoch in range(args.epochs):
         loss_mgr = utils.MaskRCNNLossManager()
         for image_tensor, target in tqdm.tqdm(train_dataloder):
             image_tensor_float = convert_image_dtype(image_tensor)
-            res = model([image_tensor_float], [target])
-            loss_mgr.add(res, image_tensor.shape[0])
+            loss_dict = model([image_tensor_float], [target])
+            loss_mgr.add(loss_dict, image_tensor.shape[0])
 
         if epoch % 2 == 0:
             logging.log(logging.INFO, "Epoch %d", epoch)
+
+        optim_fn.zero_grad()
+        losses = sum(loss for loss in loss_dict.values())
+        losses.backward()
+        optim_fn.step()
+
 
         class_loss_avg, box_loss_avg, mask_loss_avg, objns_loss_avg, rpn_box_reg_loss = loss_mgr.get_averages()
         writer.add_scalar('Loss/train/classifier', class_loss_avg, epoch)
@@ -155,6 +163,7 @@ def train(args: argparse.Namespace):
         writer.add_scalar('Loss/train/rpn_box_reg', rpn_box_reg_loss, epoch)
     writer.close()
     torch.save(model.state_dict(), args.model_output_path)
+
 
 
 if __name__ == "__main__":
