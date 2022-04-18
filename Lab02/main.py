@@ -18,6 +18,9 @@ from Dataset.split_dataset import mogli
 from dataset import BSDDataset
 import test
 
+folders_dict = None
+writer = None
+
 def main(args: argparse.Namespace):
     writer = SummaryWriter()
 
@@ -116,7 +119,7 @@ def setup_fiftyone(dataset_dir):
     input("Press enter to continue")
 
 
-def train(args: argparse.Namespace, folders_dict: Dict[str, str], writer: SummaryWriter):
+def train(args: argparse.Namespace):
     if torch.cuda.is_available():
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
@@ -148,6 +151,7 @@ def train(args: argparse.Namespace, folders_dict: Dict[str, str], writer: Summar
         writer.add_scalar('Loss/train/objectness', objns_loss_avg, epoch)
         writer.add_scalar('Loss/train/rpn_box_reg', rpn_box_reg_loss, epoch)
     writer.close()
+    torch.save(model.state_dict(), args.model_output_path)
 
 
 if __name__ == "__main__":
