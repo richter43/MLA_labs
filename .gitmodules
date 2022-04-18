@@ -1,3 +1,4 @@
 [submodule "Lab02/Dataset"]
 	path = Lab02/Dataset
 	url = https://github.com/richter43/BSData
+	branch = main
