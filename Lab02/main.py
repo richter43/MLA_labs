@@ -3,7 +3,7 @@ import os
 import logging
 from distutils.dir_util import copy_tree
 from typing import Dict
-
+import tqdm
 
 import fiftyone as fo
 import labelme2coco
@@ -156,7 +156,7 @@ def train(args: argparse.Namespace, folders_dict: Dict[str, str], writer: Summar
 
     for epoch in range(args.epochs):
         loss_mgr = utils.MaskRCNNLossManager()
-        for image_tensor, target in train_dataloder:
+        for image_tensor, target in tqdm.tqdm(train_dataloder):
             image_tensor_float = convert_image_dtype(image_tensor)
             res = model([image_tensor_float], [target])
             loss_mgr.add(res, image_tensor.shape[0])
