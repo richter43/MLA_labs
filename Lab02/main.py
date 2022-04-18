@@ -1,32 +1,33 @@
 import argparse
-import os
 import logging
+import os
 from distutils.dir_util import copy_tree
 from typing import Dict
-import tqdm
 
 import fiftyone as fo
 import labelme2coco
 import torch
+import tqdm
 from torch.utils.data import DataLoader
+from torch.utils.tensorboard import SummaryWriter
+from torchvision.transforms.functional import convert_image_dtype
 
+import network
 import utils
 from Dataset.split_dataset import mogli
 from dataset import BSDDataset
-import network
-from torchvision.transforms.functional import convert_image_dtype
-from torch.utils.tensorboard import SummaryWriter
+import test
 
 def main(args: argparse.Namespace):
-
     writer = SummaryWriter()
 
     folders_dict = preprocessing(args)
     logging.info("Successfully setup")
-    # test_drawing(folders_dict)
-    # test_network(folders_dict)
+    # test.test_drawing(folders_dict)
+    # test.test_network(folders_dict)
 
     train(args, folders_dict, writer)
+
 
 def preprocessing(args: argparse.Namespace):
     # Defining a dictionary with all folders
@@ -73,6 +74,7 @@ def preprocessing(args: argparse.Namespace):
 
     return folders_dict
 
+
 def dataset_dict(args: argparse.Namespace):
     folders_dict = dict()
     folders_dict['dataset_dir'] = os.path.join(os.getcwd(), "Dataset")
@@ -114,41 +116,16 @@ def setup_fiftyone(dataset_dir):
     input("Press enter to continue")
 
 
-def test_drawing(folders_dict: Dict[str, str]):
-    train_dataset = BSDDataset(folders_dict['train_dir'], folders_dict['coco_train_ann'])
-    for i in range(3):
-        image, target = train_dataset[i]
-        utils.draw_target(image, target, show_image=True)
-
-def test_network(folders_dict: Dict[str, str]):
-
-    train_dataset = BSDDataset(folders_dict['train_dir'], folders_dict['coco_train_ann'])
-
-    model = network.maskrcnn_resnet101_fpn()
-
-    coco = train_dataset.get_coco()
-
-    model.train()
-    image, target = train_dataset[0]
-    image_tensor = convert_image_dtype(image)
-    # target = utils.ann_to_target(ann, coco)
-    res = model([image_tensor], [target])
-
-    model.eval()
-    res = model([image_tensor])
-    utils.draw_target(image, res[0], show_image=True)
-
-    print("Done")
-
 def train(args: argparse.Namespace, folders_dict: Dict[str, str], writer: SummaryWriter):
-
     if torch.cuda.is_available():
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     train_dataset = BSDDataset(folders_dict['train_dir'], folders_dict['coco_train_ann'])
     val_dataset = BSDDataset(folders_dict['val_dir'], folders_dict['coco_val_ann'])
-    train_dataloder = DataLoader(train_dataset, batch_size=1, collate_fn=utils.pass_through_collate if torch.cuda.is_available() else None)
-    val_dataloder = DataLoader(val_dataset, batch_size=1, collate_fn=utils.pass_through_collate if torch.cuda.is_available() else None)
+    train_dataloder = DataLoader(train_dataset, batch_size=1,
+                                 collate_fn=utils.pass_through_collate if torch.cuda.is_available() else None)
+    val_dataloder = DataLoader(val_dataset, batch_size=1,
+                               collate_fn=utils.pass_through_collate if torch.cuda.is_available() else None)
 
     model = network.maskrcnn_resnet101_fpn().to(device)
 
@@ -171,6 +148,7 @@ def train(args: argparse.Namespace, folders_dict: Dict[str, str], writer: Summar
         writer.add_scalar('Loss/train/objectness', objns_loss_avg, epoch)
         writer.add_scalar('Loss/train/rpn_box_reg', rpn_box_reg_loss, epoch)
     writer.close()
+
 
 if __name__ == "__main__":
     os.environ.pop("QT_QPA_PLATFORM_PLUGIN_PATH")
