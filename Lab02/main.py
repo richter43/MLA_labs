@@ -29,7 +29,7 @@ def main(args: argparse.Namespace):
     # test.test_drawing(folders_dict)
     # test.test_network(folders_dict)
 
-    train(args, folders_dict, writer)
+    train(args)
 
 
 def preprocessing(args: argparse.Namespace):
